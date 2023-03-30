@@ -245,62 +245,6 @@ def tiktok_foryou(browser_context_, container_name):  # , is_headless):
             # print(f'completion: {completion_perc}%')
 
             # wait for the video completion
-            # TODO: avoid busy waiting (using time.sleep)
-            """
-            while True:
-                # 如果视频没有自动播放,则手动播放
-                vid_player = page.locator('//*[contains(@class, "xgplayer")]')
-                class_attr = vid_player.get_attribute('class')
-                if "xgplayer-pause" in class_attr:
-                    # 按空白键播放
-                    page.keyboard.press(" ")
-
-                # 获得已播放时间百分比%
-                left = page.locator('//div[@class="tiktok-1ioucls-DivSeekBarCircle e1rpry1m4"]') \
-                    .get_attribute("style")
-
-                # 已播放时间百分比格式: style="left: calc(18.8044%);"
-                perc = float(re.split(r"[(%);]", str(left))[1])
-                # print(perc)
-                if perc >= completion_perc:
-                    print(f'count:{idx}: finish watching')
-
-                    # 点赞
-                    like_btn = page.locator('//span[@data-e2e="browse-like-icon"]')
-                    like_btn.click()
-                    time.sleep(2)
-
-                    # 评论
-                    # 取得评论框
-                    comment_box = page.locator('//div[@class="public-DraftEditorPlaceholder-root"]')
-
-                    # 鼠标点击focus
-                    comment_box.click()
-                    time.sleep(3)
-
-                    # 输入评论文字
-                    page.keyboard.insert_text("so nice :)")
-                    time.sleep(2)
-
-                    # 取得发布按钮（评论框输入文字后，发布按钮才会Enable)
-                    comment_post_btn = page.locator('//div[@data-e2e="comment-post"]')
-                    expect(comment_post_btn).to_be_enabled()
-
-                    # 发布
-                    comment_post_btn.click()
-                    time.sleep(3)
-
-                    # 收藏
-                    # 目前网页版没有收藏功能
-
-                    # 转发
-                    # TODO: 转发
-
-
-                    idx = idx + 1
-                    break
-            """
-
             # format: mm:ss/mm:ss
             video_time_container = \
                 page.locator('//div[@class="tiktok-o2z5xv-DivSeekBarTimeContainer e1rpry1m1"]').text_content()
