@@ -18,6 +18,7 @@ import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium import webdriver
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -88,12 +89,19 @@ def gen_pwd():
 
 def myco_run():
     try:
-        # create a uc instance
-        driver = uc.Chrome(version_main=113, options=uc.ChromeOptions())
+        # webdriver_path = 'chromedriver_win32/chromedriver.exe'
+
+        # Set the Chrome WebDriver options
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+
+        driver = webdriver.Chrome(options=options)
 
         # go to myco.io
         driver.get("https://myco.io/")
-
+        
+        # set the waiter
         wait = WebDriverWait(driver, 10)
 
         # check if Logged in
