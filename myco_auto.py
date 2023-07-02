@@ -14,6 +14,7 @@ import requests
 import ssl
 
 import undetected_chromedriver as uc
+import multiprocessing as mp
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -30,8 +31,42 @@ API_KEY = {
 EMAIL_ALIAS = "yunlei.cyou"
 # video_queue = queue.Queue()
 
-with open("video_url.txt", "r") as f:
+with open("video_url_test.txt", "r") as f:
     video_urls = f.read().split("\n")
+
+
+class Worker(mp.Process):
+
+    def __init__(self, name=None, queue=mp.Queue(), stop_ev=mp.Event(), daemon=True):
+        self.queue = queue
+        self.driver = None
+        self.stop_ev = stop_ev
+        if name is None:
+            self.__class__.n += 1
+            name = f'worker-{self.__class__.n}'
+        super().__init__(name=name, daemon=daemon)
+
+    def run(self):
+        # self.driver = uc.Chrome(user_multi_procs=True)
+        # while True:
+        #     try:
+        #         job = self.queue.get_nowait()
+        #     except Empty:
+        #         time.sleep(.1)
+        #         continue
+        #     if not job or not job.get('action'):
+        #         break
+        #     try:
+        #         self.driver.get(job['url'])
+        #         print('loaded ', job['url'], 'completely')
+        #     except Exception as e:
+        #         print(e)
+        #
+        #     print(self.name, 'loading ', job.get('url'))
+        myco_run()
+
+    def start(self) -> None:
+        super().start()
 
 
 def get_urls(video_q):
@@ -87,31 +122,36 @@ def gen_pwd():
     return password
 
 
-def myco_run():
+def check_login(wait):
     try:
-        # webdriver_path = 'chromedriver_win32/chromedriver.exe'
+        is_need_logged_in = \
+            wait.until(EC.visibility_of_element_located((By.XPATH, "//button[@data-testid='btn-signin']")))
+    except:
+        is_need_logged_in = False
 
+    return is_need_logged_in
+
+
+def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = None):
+    try:
         # Set the Chrome WebDriver options
-        options = webdriver.ChromeOptions()
+        options = uc.ChromeOptions()
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
-
-        driver = webdriver.Chrome(options=options)
+        driver = uc.Chrome(options=options, user_multi_procs=True)
 
         # go to myco.io
         driver.get("https://myco.io/")
-        
+
         # set the waiter
         wait = WebDriverWait(driver, 10)
 
-        # check if Logged in
-        try:
-            is_need_logged_in = \
-                wait.until(EC.visibility_of_element_located((By.XPATH, "//button[@data-testid='btn-signin']")))
-        except:
-            is_need_logged_in = False
+        # check if need register
+        if username is None or pwd is None:
+            # put video urls into queue for later use
+            video_queue = queue.Queue()
+            get_urls(video_queue)
 
-        if is_need_logged_in:
             # click on Sign In
             signin_btn = driver.find_element(By.XPATH, '//button[@data-testid="btn-signin"]')
             wait.until(EC.visibility_of(signin_btn))
@@ -126,12 +166,12 @@ def myco_run():
             first_name = names.get_first_name()
             last_name = names.get_last_name()
             rand_num = randint(100000, 999999)
-            user_name = f"{first_name}{last_name}{rand_num}"
+            username = f"{first_name}{last_name}{rand_num}"
             email_alias = f"{first_name}.{last_name}{rand_num}"
             email = f"{email_alias}@{EMAIL_ALIAS}"
 
             # generate a password for signup
-            password = gen_pwd()
+            pwd = gen_pwd()
 
             # write account into file
             # TODO
@@ -151,15 +191,15 @@ def myco_run():
 
             input_user_name = driver.find_element(By.XPATH, '//input[@data-testid="userName"]')
             input_user_name.click()
-            input_user_name.send_keys(user_name)
+            input_user_name.send_keys(username)
 
             input_pwd = driver.find_element(By.XPATH, '//input[@data-testid="password"]')
             input_pwd.click()
-            input_pwd.send_keys(password)
+            input_pwd.send_keys(pwd)
 
             input_pwd_confirm = driver.find_element(By.XPATH, '//input[@data-testid="confirmPassword"]')
             input_pwd_confirm.click()
-            input_pwd_confirm.send_keys(password)
+            input_pwd_confirm.send_keys(pwd)
 
             cts_check = driver.find_element(By.XPATH, '//input[@data-testid="tAndCCheckbox"]')
             cts_check.click()
@@ -169,6 +209,7 @@ def myco_run():
 
             # get verification url
             url = get_verification_url(str.lower(email_alias), EMAIL_ALIAS, API_KEY)
+            # TODO: add timeout
 
             # open the url in a new tab
             # driver.execute_script("window.open()")
@@ -184,38 +225,40 @@ def myco_run():
             # go back to myco.io
             driver.get("https://myco.io/")
 
+        while True:
+            # for every video, close the driver, release memory, and signin again to continue
             # Sign In
             signin_btn = driver.find_element(By.XPATH, '//button[@data-testid="btn-signin"]')
             wait.until(EC.visibility_of(signin_btn))
             signin_btn.click()
 
             user_name_input = driver.find_element(By.XPATH, '//input[@data-testid="input-username"]')
-            user_name_input.send_keys(user_name)
+            user_name_input.send_keys(username)
             pwd_input = driver.find_element(By.XPATH, '//input[@data-testid="input-password"]')
-            pwd_input.send_keys(password)
+            pwd_input.send_keys(pwd)
 
             login_btn = driver.find_element(By.XPATH, '//button[@data-testid="login-SignIn"]')
             login_btn.click()
 
             # wait for signed-in page to load
-            # log_out_btn = driver.find_element(By.XPATH, '//span[@data-testid="menu-item-logout"]')
             wait.until(EC.presence_of_element_located((By.XPATH, '//span[@data-testid="menu-item-logout"]')))
 
-        global video_urls
-        for url in video_urls:
-            # for every 5 videos, close the page, release memory, and signin again to continue
             retry = 0
             surfing_start_time = datetime.datetime.now()
             finish_watching = False
 
+            url = video_queue.get()
+
             while retry < 3:
-                print(f'try the {retry + 1} time')
+                print(f'try the {retry + 1} time with url:{url}')
                 try:
                     # go to the target video
                     driver.get(url)
 
                     # press play
-                    play_btn_id = driver.find_element(By.XPATH, '//button[@aria-label="Play/Pause"]').get_attribute("id")
+                    wait.until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Play/Pause"]')))
+                    play_btn_id = driver.find_element(By.XPATH, '//button[@aria-label="Play/Pause"]').get_attribute(
+                        "id")
                     play_btn = driver.find_element(By.XPATH, f'//button[@id="{play_btn_id}"]')
                     wait.until(EC.visibility_of(play_btn))
                     play_btn.click()
@@ -234,58 +277,64 @@ def myco_run():
                     # get the total video time in seconds
                     total_time = "0"
                     while total_time == "0" or total_time is None:
-                        total_time = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]').get_attribute("aria-valuemax")
+                        total_time = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]').get_attribute(
+                            "aria-valuemax")
 
                     print(total_time)
 
                     while not finish_watching:
                         time.sleep(5)
-                        #
-                        # play_btn_id = page.locator('//button[@aria-label="Play/Pause"]').get_attribute("id")
-                        # play_btn = page.locator(f'//button[@id="{play_btn_id}"]')
-                        # is_pressed = play_btn.get_attribute("aria-pressed")
-                        # if is_pressed == "false":
-                        #     play_btn.click()
 
                         # update surfing time flag
                         surfing_time = (datetime.datetime.now() - surfing_start_time).total_seconds()
                         finish_watching = (surfing_time >= float(total_time))
                     break
-                except:
+                except Exception as e:
+                    print(f'retry err: {e}')
                     retry = retry + 1
                     continue
 
-            time.sleep(2)
+            # logout
+            logout_btn = driver.find_element(By.XPATH, '//span[@data-testid="menu-item-logout"]')
+            logout_btn.click()
 
-            # driver.execute_script("window.open()")
-            # driver.switch_to.window(driver.window_handles[-1])
-            # page.close()
-            # time.sleep(10)
-            # page = page1
+            time.sleep(5)
 
-        # close browser
-        driver.close()
+            # close driver
+            driver.quit()
 
-        # # delete env
-        # delete_env([container_code])
+            time.sleep(5)
+
+            if not video_queue.empty():
+                # move to the next video
+                myco_run(username, pwd, video_queue)
+
+            break
+
+        # print('myco_run exit.')
     except Exception as e:
         try:
             print(e)
             # close browser
-            driver.close()
+            driver.quit()
         except:
             pass
-        # delete env
-        # delete_env([container_code])
 
 
 if __name__ == '__main__':
+    # threads = []
+    # for i in range(2):
+    #     threads.append(threading.Thread(target=myco_run))
+    #     threads[i].start()
+    #     time.sleep(15)
 
-    threads = []
-    for i in range(1):
-        threads.append(threading.Thread(target=myco_run))
-        threads[i].start()
-        time.sleep(60)
+    workers = [Worker(name=f'worker-{n}') for n in range(2)]
+
+    for w in workers:
+        w.start()
+
+    for w in workers:
+        w.join()
 
     # when thread died, create new threads to maintain 5-threads-pool
     # release the memory periodically
