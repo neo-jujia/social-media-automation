@@ -31,7 +31,7 @@ API_KEY = {
 EMAIL_ALIAS = "yunlei.cyou"
 # video_queue = queue.Queue()
 
-with open("video_url_test.txt", "r") as f:
+with open("video_url.txt", "r") as f:
     video_urls = f.read().split("\n")
 
 
@@ -283,11 +283,11 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     print(total_time)
 
                     while not finish_watching:
-                        time.sleep(5)
+                        time.sleep(30)
 
                         # update surfing time flag
                         surfing_time = (datetime.datetime.now() - surfing_start_time).total_seconds()
-                        finish_watching = (surfing_time >= float(total_time))
+                        finish_watching = (surfing_time >= float(3000))
                     break
                 except Exception as e:
                     print(f'retry err: {e}')
@@ -328,10 +328,11 @@ if __name__ == '__main__':
     #     threads[i].start()
     #     time.sleep(15)
 
-    workers = [Worker(name=f'worker-{n}') for n in range(2)]
+    workers = [Worker(name=f'worker-{n}') for n in range(5)]
 
     for w in workers:
         w.start()
+        time.sleep(60)
 
     for w in workers:
         w.join()
