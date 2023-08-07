@@ -13,7 +13,7 @@ import requests
 
 import ssl
 
-import undetected_chromedriver as uc
+#import undetected_chromedriver as uc
 import multiprocessing as mp
 
 from selenium.webdriver.common.by import By
@@ -135,10 +135,18 @@ def check_login(wait):
 def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = None):
     try:
         # Set the Chrome WebDriver options
-        options = uc.ChromeOptions()
-        options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
-        driver = uc.Chrome(options=options, user_multi_procs=True)
+        # options = uc.ChromeOptions()
+        # options.add_argument('--headless')
+        # options.add_argument('--no-sandbox')
+        # driver = uc.Chrome(options=options, user_multi_procs=True)
+
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+
+        driver = webdriver.Chrome(options=chrome_options)
 
         # go to myco.io
         driver.get("https://myco.io/")
@@ -328,7 +336,7 @@ if __name__ == '__main__':
     #     threads[i].start()
     #     time.sleep(15)
 
-    workers = [Worker(name=f'worker-{n}') for n in range(5)]
+    workers = [Worker(name=f'worker-{n}') for n in range(1)]
 
     for w in workers:
         w.start()
