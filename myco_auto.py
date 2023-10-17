@@ -21,6 +21,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium import webdriver
 
+from selenium.common.exceptions import NoSuchElementException
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 # api key for ImprovMX
@@ -29,6 +31,7 @@ API_KEY = {
 }
 
 EMAIL_ALIAS = "yunlei.cyou"
+#EMAIL_ALIAS = "tkformenssr.top"
 # video_queue = queue.Queue()
 
 with open("video_url.txt", "r") as f:
@@ -138,18 +141,21 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
         options = uc.ChromeOptions()
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
+##        options.headless = False
         driver = uc.Chrome(options=options) #, user_multi_procs=True)
 
-        #chrome_options = webdriver.ChromeOptions()
-        #chrome_options.add_argument('--no-sandbox')
-        #chrome_options.add_argument('--headless')
-        #chrome_options.add_argument('--disable-gpu')
-        #chrome_options.add_argument('--disable-dev-shm-usage')
+##        chrome_options = webdriver.ChromeOptions()
+##        chrome_options.add_argument('--no-sandbox')
+##        chrome_options.add_argument('--headless')
+##        chrome_options.add_argument('--disable-gpu')
+##        chrome_options.add_argument('--disable-dev-shm-usage')
 
-        #driver = webdriver.Chrome(options=chrome_options)
+##        driver = webdriver.Chrome(options=chrome_options)
 
         # go to myco.io
         driver.get("https://myco.io/")
+
+##        time.sleep(3000)
 
         # set the waiter
         wait = WebDriverWait(driver, 10)
@@ -159,6 +165,8 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
             # put video urls into queue for later use
             video_queue = queue.Queue()
             get_urls(video_queue)
+
+            '''
 
             # click on Sign In
             signin_btn = driver.find_element(By.XPATH, '//button[@data-testid="btn-signin"]')
@@ -179,7 +187,8 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
             email = f"{email_alias}@{EMAIL_ALIAS}"
 
             # generate a password for signup
-            pwd = gen_pwd()
+            #pwd = gen_pwd()
+            pwd = 'Test2345!'
 
             # write account into file
             # TODO
@@ -233,12 +242,17 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
             # go back to myco.io
             driver.get("https://myco.io/")
 
+            '''
+
         while True:
             # for every video, close the driver, release memory, and signin again to continue
             # Sign In
             signin_btn = driver.find_element(By.XPATH, '//button[@data-testid="btn-signin"]')
             wait.until(EC.visibility_of(signin_btn))
             signin_btn.click()
+
+            username = 'lorettabeardsley936245'
+            pwd = 'Test2345!'
 
             user_name_input = driver.find_element(By.XPATH, '//input[@data-testid="input-username"]')
             user_name_input.send_keys(username)
@@ -263,13 +277,19 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     # go to the target video
                     driver.get(url)
 
+                    print('sleeping 10s')
+
+                    time.sleep(10)
+
                     # press play
-                    wait.until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Play/Pause"]')))
-                    play_btn_id = driver.find_element(By.XPATH, '//button[@aria-label="Play/Pause"]').get_attribute(
+                    wait.until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Play"]')))
+                    play_btn_id = driver.find_element(By.XPATH, '//button[@aria-label="Play"]').get_attribute(
                         "id")
                     play_btn = driver.find_element(By.XPATH, f'//button[@id="{play_btn_id}"]')
                     wait.until(EC.visibility_of(play_btn))
                     play_btn.click()
+
+                    print('play!')
 
                     while True:
                         try:
@@ -282,6 +302,8 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                         except:
                             play_btn.click()
 
+                    print('checking total time')
+
                     # get the total video time in seconds
                     total_time = "0"
                     while total_time == "0" or total_time is None:
@@ -291,7 +313,54 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     print(total_time)
 
                     while not finish_watching:
-                        time.sleep(30)
+                        time.sleep(60)
+
+                        # save screenshot
+                        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                        screenshot_filename = f'screenshot_{current_time}.png'
+                        driver.save_screenshot(screenshot_filename)
+
+                        xpath = "//*[contains(text(), 'You are seeing an ad now')]"
+
+                        ads_banner = driver.find_elements(By.XPATH, xpath)
+
+                        if len(ads_banner) > 0:
+                            print('ads')
+                            
+##                            try:
+##                                #skip_ad_button = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')
+##                                skip_ad_buttn = driver.find_element_by_class_name('videoAdUiSkipButton videoAdUiAction videoAdUiRedesignedSkipButton')
+##                                wait.until(EC.visibility_of(skip_ad_buttn))
+##                                skip_ad_buttn.click()
+##                                #print("Element exists")
+##                            except NoSuchElementException:
+##                                print("Skip btn does not exist")
+
+##                            # Find all iframes on the page
+##                            iframes = driver.find_elements(By.TAG_NAME, 'iframe')
+##
+##                            # Iterate through each iframe and search for the element
+##                            for iframe in iframes:
+##                                driver.switch_to.frame(iframe)  # Switch to the iframe
+##                                try:
+##                                    element = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')  # Search for the element within the iframe
+##
+##                                    print('skip btn found')
+##
+##                                    # Perform actions with the found element
+##                                    element.click()
+##                                    break  # If element found, break out of the loop
+##                                except NoSuchElementException:
+##                                    pass  # Element not found in this iframe, continue to the next
+##
+##                            # Switch back to the main page (outside of any iframes)
+##                            driver.switch_to.default_content()
+
+                        #timeline = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]')
+
+                        #playtime = timeline.get_attribute("aria-valuenow")
+
+                        #print(play_btn.get_attribute("aria-pressed"))
 
                         # update surfing time flag
                         surfing_time = (datetime.datetime.now() - surfing_start_time).total_seconds()
@@ -299,6 +368,12 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     break
                 except Exception as e:
                     print(f'retry err: {e}')
+
+                    # save screenshot
+                    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    screenshot_filename = f'screenshot_watch_execption_{current_time}.png'
+                    driver.save_screenshot(screenshot_filename)
+                        
                     retry = retry + 1
                     continue
 
