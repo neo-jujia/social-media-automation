@@ -22,6 +22,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium import webdriver
 
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException
+
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -139,9 +141,9 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
     try:
         # Set the Chrome WebDriver options
         options = uc.ChromeOptions()
-        options.add_argument('--headless')
+##        options.add_argument('--headless')
         options.add_argument('--no-sandbox')
-##        options.headless = False
+        options.headless = False
         driver = uc.Chrome(options=options) #, user_multi_procs=True)
 
 ##        chrome_options = webdriver.ChromeOptions()
@@ -165,8 +167,6 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
             # put video urls into queue for later use
             video_queue = queue.Queue()
             get_urls(video_queue)
-
-            '''
 
             # click on Sign In
             signin_btn = driver.find_element(By.XPATH, '//button[@data-testid="btn-signin"]')
@@ -242,8 +242,6 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
             # go back to myco.io
             driver.get("https://myco.io/")
 
-            '''
-
         while True:
             # for every video, close the driver, release memory, and signin again to continue
             # Sign In
@@ -251,8 +249,8 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
             wait.until(EC.visibility_of(signin_btn))
             signin_btn.click()
 
-            username = 'lorettabeardsley936245'
-            pwd = 'Test2345!'
+##            username = 'wudideren'
+##            pwd = 'Test2345!'
 
             user_name_input = driver.find_element(By.XPATH, '//input[@data-testid="input-username"]')
             user_name_input.send_keys(username)
@@ -302,7 +300,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                         except:
                             play_btn.click()
 
-                    print('checking total time')
+##                    print('checking total time')
 
                     # get the total video time in seconds
                     total_time = "0"
@@ -313,12 +311,12 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     print(total_time)
 
                     while not finish_watching:
-                        time.sleep(60)
+                        time.sleep(30)
 
                         # save screenshot
-                        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                        screenshot_filename = f'screenshot_{current_time}.png'
-                        driver.save_screenshot(screenshot_filename)
+##                        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+##                        screenshot_filename = f'screenshot_{current_time}.png'
+##                        driver.save_screenshot(screenshot_filename)
 
                         xpath = "//*[contains(text(), 'You are seeing an ad now')]"
 
@@ -336,25 +334,40 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
 ##                            except NoSuchElementException:
 ##                                print("Skip btn does not exist")
 
-##                            # Find all iframes on the page
-##                            iframes = driver.find_elements(By.TAG_NAME, 'iframe')
-##
-##                            # Iterate through each iframe and search for the element
-##                            for iframe in iframes:
-##                                driver.switch_to.frame(iframe)  # Switch to the iframe
-##                                try:
-##                                    element = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')  # Search for the element within the iframe
-##
-##                                    print('skip btn found')
-##
-##                                    # Perform actions with the found element
-##                                    element.click()
-##                                    break  # If element found, break out of the loop
+##                            print('finding iframes')
+
+                            # Find all iframes on the page
+                            iframes = driver.find_elements(By.TAG_NAME, 'iframe')
+
+##                            print('iterateing iframes')
+
+                            # Iterate through each iframe and search for the element
+                            for iframe in iframes:
+                                try:
+                                    driver.switch_to.frame(iframe)  # Switch to the iframe
+                                
+                                    element = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')  # Search for the element within the iframe
+
+                                    print('skip btn found')
+
+                                    # Perform actions with the found element
+                                    element.click()
+                                    
+                                    break  # If element found, break out of the loop
+##                                except StaleElementReferenceException:
+##                                    pass  # Stale element, continue to the next iframe
 ##                                except NoSuchElementException:
 ##                                    pass  # Element not found in this iframe, continue to the next
-##
-##                            # Switch back to the main page (outside of any iframes)
-##                            driver.switch_to.default_content()
+                                except:
+                                    pass
+
+
+##                            print('switching back to default')
+                            
+                            # Switch back to the main page (outside of any iframes)
+                            driver.switch_to.default_content()
+
+##                            print('switched back')
 
                         #timeline = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]')
 
@@ -364,7 +377,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
 
                         # update surfing time flag
                         surfing_time = (datetime.datetime.now() - surfing_start_time).total_seconds()
-                        finish_watching = (surfing_time >= float(3000))
+                        finish_watching = (surfing_time >= float(3060))
                     break
                 except Exception as e:
                     print(f'retry err: {e}')
