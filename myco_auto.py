@@ -261,92 +261,92 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
             # go back to myco.io
             driver.get("https://myco.io/")
 
-        while True:
-            # for every video, close the driver, release memory, and signin again to continue
-            # Sign In
-            signin_btn = driver.find_element(By.XPATH, '//button[@data-testid="btn-signin"]')
-            wait.until(EC.visibility_of(signin_btn))
-            signin_btn.click()
+        #while True:
+        # for every video, close the driver, release memory, and signin again to continue
+        # Sign In
+        signin_btn = driver.find_element(By.XPATH, '//button[@data-testid="btn-signin"]')
+        wait.until(EC.visibility_of(signin_btn))
+        signin_btn.click()
 
 ##            username = 'wudideren'
 ##            pwd = 'Test2345!'
 
-            user_name_input = driver.find_element(By.XPATH, '//input[@data-testid="input-username"]')
-            user_name_input.send_keys(username)
-            pwd_input = driver.find_element(By.XPATH, '//input[@data-testid="input-password"]')
-            pwd_input.send_keys(pwd)
+        user_name_input = driver.find_element(By.XPATH, '//input[@data-testid="input-username"]')
+        user_name_input.send_keys(username)
+        pwd_input = driver.find_element(By.XPATH, '//input[@data-testid="input-password"]')
+        pwd_input.send_keys(pwd)
 
-            login_btn = driver.find_element(By.XPATH, '//button[@data-testid="login-SignIn"]')
-            login_btn.click()
+        login_btn = driver.find_element(By.XPATH, '//button[@data-testid="login-SignIn"]')
+        login_btn.click()
 
-            # wait for signed-in page to load
-            wait.until(EC.presence_of_element_located((By.XPATH, '//span[@data-testid="menu-item-logout"]')))
+        # wait for signed-in page to load
+        wait.until(EC.presence_of_element_located((By.XPATH, '//span[@data-testid="menu-item-logout"]')))
 
-            retry = 0
-            surfing_start_time = datetime.datetime.now()
-            finish_watching = False
+        retry = 0
+        surfing_start_time = datetime.datetime.now()
+        finish_watching = False
 
-            url = video_queue.get()
+        url = video_queue.get()
 
-            while retry < 3:
-                print(f'try the {retry + 1} time with url:{url}')
-                try:
-                    # go to the target video
-                    driver.get(url)
+        while retry < 3:
+            print(f'try the {retry + 1} time with url:{url}')
+            try:
+                # go to the target video
+                driver.get(url)
 
-                    #print('sleeping 10s')
+                #print('sleeping 10s')
 
-                    #time.sleep(10)
-                    
-                    print('waiting for play')
-                    
-                    # press play
-                    wait.until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Play"]')))
+                #time.sleep(10)
+                
+                print('waiting for play')
+                
+                # press play
+                wait.until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Play"]')))
 
-                    play_btn_id = driver.find_element(By.XPATH, '//button[@aria-label="Play"]').get_attribute(
-                        "id")
-                    play_btn = driver.find_element(By.XPATH, f'//button[@id="{play_btn_id}"]')
-                    wait.until(EC.visibility_of(play_btn))
-                    play_btn.click()
+                play_btn_id = driver.find_element(By.XPATH, '//button[@aria-label="Play"]').get_attribute(
+                    "id")
+                play_btn = driver.find_element(By.XPATH, f'//button[@id="{play_btn_id}"]')
+                wait.until(EC.visibility_of(play_btn))
+                play_btn.click()
 
-                    print('play!')
+                print('play!')
 
-                    while True:
-                        try:
-                            time.sleep(3)
-                            is_pressed = play_btn.get_attribute("aria-pressed")
-                            if is_pressed == "true":
-                                break
-                            else:
-                                play_btn.click()
-                        except:
+                while True:
+                    try:
+                        time.sleep(3)
+                        is_pressed = play_btn.get_attribute("aria-pressed")
+                        if is_pressed == "true":
+                            break
+                        else:
                             play_btn.click()
+                    except:
+                        play_btn.click()
 
 ##                    print('checking total time')
 
-                    # get the total video time in seconds
-                    total_time = "0"
-                    while total_time == "0" or total_time is None:
-                        total_time = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]').get_attribute(
-                            "aria-valuemax")
+                # get the total video time in seconds
+                total_time = "0"
+                while total_time == "0" or total_time is None:
+                    total_time = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]').get_attribute(
+                        "aria-valuemax")
 
-                    print(total_time)
+                print(total_time)
 
-                    while not finish_watching:
-                        time.sleep(60)
+                while not finish_watching:
+                    time.sleep(60)
 
-                        # save screenshot
+                    # save screenshot
 ##                        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 ##                        screenshot_filename = f'screenshot_{current_time}.png'
 ##                        driver.save_screenshot(screenshot_filename)
 
-                        xpath = "//*[contains(text(), 'You are seeing an ad now')]"
+                    xpath = "//*[contains(text(), 'You are seeing an ad now')]"
 
-                        ads_banner = driver.find_elements(By.XPATH, xpath)
+                    ads_banner = driver.find_elements(By.XPATH, xpath)
 
-                        if len(ads_banner) > 0:
+                    if len(ads_banner) > 0:
 #                            print('ads')
-                            
+                        
 ##                            try:
 ##                                #skip_ad_button = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')
 ##                                skip_ad_buttn = driver.find_element_by_class_name('videoAdUiSkipButton videoAdUiAction videoAdUiRedesignedSkipButton')
@@ -358,88 +358,95 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
 
 ##                            print('finding iframes')
 
-                            # Find all iframes on the page
-                            iframes = driver.find_elements(By.TAG_NAME, 'iframe')
+                        # Find all iframes on the page
+                        iframes = driver.find_elements(By.TAG_NAME, 'iframe')
 
 ##                            print('iterateing iframes')
 
-                            # Iterate through each iframe and search for the element
-                            for iframe in iframes:
-                                try:
-                                    driver.switch_to.frame(iframe)  # Switch to the iframe
+                        # Iterate through each iframe and search for the element
+                        for iframe in iframes:
+                            try:
+                                driver.switch_to.frame(iframe)  # Switch to the iframe
+                            
+                                element = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')  # Search for the element within the iframe
+
+                                print('skip btn found')
+
+                                # Perform actions with the found element
+                                element.click()
                                 
-                                    element = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')  # Search for the element within the iframe
-
-                                    print('skip btn found')
-
-                                    # Perform actions with the found element
-                                    element.click()
-                                    
-                                    break  # If element found, break out of the loop
+                                break  # If element found, break out of the loop
 ##                                except StaleElementReferenceException:
 ##                                    pass  # Stale element, continue to the next iframe
 ##                                except NoSuchElementException:
 ##                                    pass  # Element not found in this iframe, continue to the next
-                                except:
-                                    pass
+                            except:
+                                pass
 
 
 ##                            print('switching back to default')
-                            
-                            # Switch back to the main page (outside of any iframes)
-                            driver.switch_to.default_content()
+                        
+                        # Switch back to the main page (outside of any iframes)
+                        driver.switch_to.default_content()
 
 ##                            print('switched back')
 
-                        #timeline = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]')
+                    #timeline = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]')
 
-                        #playtime = timeline.get_attribute("aria-valuenow")
+                    #playtime = timeline.get_attribute("aria-valuenow")
 
-                        #print(play_btn.get_attribute("aria-pressed"))
+                    #print(play_btn.get_attribute("aria-pressed"))
 
-                        # update surfing time flag
-                        surfing_time = (datetime.datetime.now() - surfing_start_time).total_seconds()
-                        finish_watching = (surfing_time >= float(3060))
-                    break
-                except TimeoutException:
-                    print('Time Out!')
-                    retry = retry + 1
-                    continue
+                    # update surfing time flag
+                    surfing_time = (datetime.datetime.now() - surfing_start_time).total_seconds()
+                    finish_watching = (surfing_time >= float(3060))
+                break
+            except TimeoutException:
+                print('Time Out!')
+                retry = retry + 1
+                continue
 
-                except Exception as e:
-                    print(f'retry err: {e}')
+            except Exception as e:
+                print(f'retry err: {e}')
 
-                    # save screenshot
-                    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                    screenshot_filename = f'screenshot_watch_execption_{current_time}.png'
-                    driver.save_screenshot(screenshot_filename)
-                        
-                    retry = retry + 1
-                    continue
+                # save screenshot
+                current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                screenshot_filename = f'screenshot_watch_execption_{current_time}.png'
+                driver.save_screenshot(screenshot_filename)
+                    
+                retry = retry + 1
+                continue
 
-            # logout
-            logout_btn = driver.find_element(By.XPATH, '//span[@data-testid="menu-item-logout"]')
-            logout_btn.click()
+        # logout
+        logout_btn = driver.find_element(By.XPATH, '//span[@data-testid="menu-item-logout"]')
+        logout_btn.click()
 
-            time.sleep(5)
+        time.sleep(5)
 
-            # close driver
-            driver.quit()
+        # close driver
+        driver.quit()
 
-            time.sleep(5)
+        time.sleep(5)
 
-            if not video_queue.empty():
-                # move to the next video
-                myco_run(username, pwd, video_queue)
+        if not video_queue.empty():
+            # move to the next video
+            myco_run(username, pwd, video_queue)
 
-            break
+            #break
 
         # print('myco_run exit.')
     except Exception as e:
         try:
-            print(e)
+            print(f'myco_run() error: {e}')
+
             # close browser
             driver.quit()
+
+            if not video_queue.empty():
+                print('move to next video.')
+                
+                # move to the next video
+                myco_run(username, pwd, video_queue)          
         except:
             pass
 
