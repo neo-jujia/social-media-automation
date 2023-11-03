@@ -23,7 +23,9 @@ from selenium import webdriver
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import TimeoutException
 
+from fake_useragent import UserAgent
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -141,26 +143,43 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
     try:
         # Set the Chrome WebDriver options
         options = uc.ChromeOptions()
-##        options.add_argument('--headless')
+#        options.add_argument('--headless')
         options.add_argument('--no-sandbox')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-dev-shm-usage')
+
+        userAgent = UserAgent(os='windows').random
+        #options.add_argument(f"--user-agent={userAgent}")
+        
+        ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.31'
+        options.add_argument(f"--user-agent={ua}")
+
         options.headless = False
         driver = uc.Chrome(options=options) #, user_multi_procs=True)
 
-##        chrome_options = webdriver.ChromeOptions()
-##        chrome_options.add_argument('--no-sandbox')
-##        chrome_options.add_argument('--headless')
-##        chrome_options.add_argument('--disable-gpu')
-##        chrome_options.add_argument('--disable-dev-shm-usage')
+#        chrome_options = webdriver.ChromeOptions()
+#        chrome_options.add_argument('--no-sandbox')
+#        chrome_options.add_argument('--headless')
+#        chrome_options.add_argument('--disable-gpu')
+#        chrome_options.add_argument('--disable-dev-shm-usage')
 
-##        driver = webdriver.Chrome(options=chrome_options)
-
+#        driver = webdriver.Chrome(options=chrome_options)
+        
         # go to myco.io
         driver.get("https://myco.io/")
+        
+        # Get the User Agent string
+        user_agent = driver.execute_script("return navigator.userAgent")
+        
+        #ua = UserAgent(os='windwos')
 
-##        time.sleep(3000)
+        # Print the User Agent
+        print("User Agent:", user_agent)
+
+        #time.sleep(3000)
 
         # set the waiter
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 30)
 
         # check if need register
         if username is None or pwd is None:
@@ -275,12 +294,15 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     # go to the target video
                     driver.get(url)
 
-                    print('sleeping 10s')
+                    #print('sleeping 10s')
 
-                    time.sleep(10)
-
+                    #time.sleep(10)
+                    
+                    print('waiting for play')
+                    
                     # press play
                     wait.until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Play"]')))
+
                     play_btn_id = driver.find_element(By.XPATH, '//button[@aria-label="Play"]').get_attribute(
                         "id")
                     play_btn = driver.find_element(By.XPATH, f'//button[@id="{play_btn_id}"]')
@@ -311,7 +333,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     print(total_time)
 
                     while not finish_watching:
-                        time.sleep(30)
+                        time.sleep(60)
 
                         # save screenshot
 ##                        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -323,7 +345,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                         ads_banner = driver.find_elements(By.XPATH, xpath)
 
                         if len(ads_banner) > 0:
-                            print('ads')
+#                            print('ads')
                             
 ##                            try:
 ##                                #skip_ad_button = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')
@@ -379,6 +401,11 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                         surfing_time = (datetime.datetime.now() - surfing_start_time).total_seconds()
                         finish_watching = (surfing_time >= float(3060))
                     break
+                except TimeoutException:
+                    print('Time Out!')
+                    retry = retry + 1
+                    continue
+
                 except Exception as e:
                     print(f'retry err: {e}')
 
