@@ -70,7 +70,7 @@ class Worker(mp.Process):
         #         print(e)
         #
         #     print(self.name, 'loading ', job.get('url'))
-        myco_run()
+        myco_run(worker_name=self.name)
 
     def start(self) -> None:
         super().start()
@@ -82,9 +82,9 @@ def get_urls(video_q):
         video_q.put(v)
 
 
-def get_verification_url(mail_alias, domains, api_key):
+def get_verification_url(mail_alias, domains, api_key, worker_name):
     adder = "https://api.improvmx.com/v3/domains/" + domains + "/logs/" + mail_alias
-    print(f'fetching new mail for {mail_alias}@{domains}...')
+    print(f'[{worker_name}]fetching new mail for {mail_alias}@{domains}...')
     while True:
         # print(f'fetching new mail for {mail_alias}@{domains}...')
         get_eml = requests.get(adder, headers=api_key).json()
@@ -95,7 +95,7 @@ def get_verification_url(mail_alias, domains, api_key):
                 url = re.compile(r'(?<=<a href=3D")(.*?)(?=[\s">])').search(str(code_html)).group()
                 clean_url = re.sub(r'=\\r\\n', '', url)
                 clean_url = re.sub(r'upn=3D', 'upn=', clean_url)
-                print('url got!')
+                print(f'[{worker_name}]url got!')
                 return clean_url
         if 'http' not in str(get_eml['logs']):
             time.sleep(1)
@@ -139,7 +139,7 @@ def check_login(wait):
     return is_need_logged_in
 
 
-def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = None):
+def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = None, worker_name: str = None):
     try:
         # Set the Chrome WebDriver options
         options = uc.ChromeOptions()
@@ -169,12 +169,12 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
         driver.get("https://myco.io/")
         
         # Get the User Agent string
-        user_agent = driver.execute_script("return navigator.userAgent")
+        #user_agent = driver.execute_script("return navigator.userAgent")
         
         #ua = UserAgent(os='windwos')
 
         # Print the User Agent
-        print("User Agent:", user_agent)
+        #print("User Agent:", user_agent)
 
         #time.sleep(3000)
 
@@ -244,7 +244,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
             register_btn.click()
 
             # get verification url
-            url = get_verification_url(str.lower(email_alias), EMAIL_ALIAS, API_KEY)
+            url = get_verification_url(str.lower(email_alias), EMAIL_ALIAS, API_KEY, worker_name)
             # TODO: add timeout
 
             # open the url in a new tab
@@ -289,7 +289,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
         url = video_queue.get()
 
         while retry < 3:
-            print(f'try the {retry + 1} time with url:{url}')
+            print(f'[{worker_name}]try the {retry + 1} time with url:{url}')
             try:
                 # go to the target video
                 driver.get(url)
@@ -298,7 +298,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
 
                 #time.sleep(10)
                 
-                print('waiting for play')
+                print(f'[{worker_name}]waiting for play')
                 
                 # press play
                 wait.until(EC.presence_of_element_located((By.XPATH, '//button[@aria-label="Play"]')))
@@ -309,7 +309,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                 wait.until(EC.visibility_of(play_btn))
                 play_btn.click()
 
-                print('play!')
+                print(f'[{worker_name}]play!')
 
                 while True:
                     try:
@@ -330,7 +330,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     total_time = driver.find_element(By.XPATH, '//div[@aria-label="Video timeline"]').get_attribute(
                         "aria-valuemax")
 
-                print(total_time)
+                print(f'[{worker_name}]total time: {total_time}')
 
                 while not finish_watching:
                     time.sleep(60)
@@ -370,7 +370,7 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                             
                                 element = driver.find_element(By.XPATH, '//button[@data-ck-tag="skip"]')  # Search for the element within the iframe
 
-                                print('skip btn found')
+                                print(f'[{worker_name}]skip btn found')
 
                                 # Perform actions with the found element
                                 element.click()
@@ -402,12 +402,12 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
                     finish_watching = (surfing_time >= float(3060))
                 break
             except TimeoutException:
-                print('Time Out!')
+                print(f'[{worker_name}]Time Out!')
                 retry = retry + 1
                 continue
 
             except Exception as e:
-                print(f'retry err: {e}')
+                print(f'[{worker_name}]retry err: {e}')
 
                 # save screenshot
                 current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -430,23 +430,23 @@ def myco_run(username: str = None, pwd: str = None, video_queue: queue.Queue = N
 
         if not video_queue.empty():
             # move to the next video
-            myco_run(username, pwd, video_queue)
+            myco_run(username, pwd, video_queue, worker_name)
 
             #break
 
         # print('myco_run exit.')
     except Exception as e:
         try:
-            print(f'myco_run() error: {e}')
+            print(f'[{worker_name}]myco_run() error: {e}')
 
             # close browser
             driver.quit()
 
             if not video_queue.empty():
-                print('move to next video.')
+                print('[{worker_name}]move to next video.')
                 
                 # move to the next video
-                myco_run(username, pwd, video_queue)          
+                myco_run(username, pwd, video_queue, worker_name)          
         except:
             pass
 
@@ -458,7 +458,7 @@ if __name__ == '__main__':
     #     threads[i].start()
     #     time.sleep(15)
 
-    workers = [Worker(name=f'worker-{n}') for n in range(1)]
+    workers = [Worker(name=f'worker-{n}') for n in range(4)]
 
     for w in workers:
         w.start()
