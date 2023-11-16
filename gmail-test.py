@@ -1,3 +1,4 @@
+# import the required libraries 
 from googleapiclient.discovery import build 
 from google_auth_oauthlib.flow import InstalledAppFlow 
 from google.auth.transport.requests import Request 
@@ -11,7 +12,7 @@ import time
 # Define the SCOPES. If modifying it, delete the token.pickle file. 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'] 
   
-def getEmails(): 
+def getEmails(target_mail): 
     # Variable creds will store the user access token. 
     # If no valid token found, we will create one. 
     creds = None
@@ -22,8 +23,11 @@ def getEmails():
   
         # Read the token from the file and store it in the variable creds 
         with open('token.pickle', 'rb') as token: 
-            creds = pickle.load(token) 
-  
+            creds = pickle.load(token)  
+
+    print('if valid: ', creds.valid)
+    print('if expired: ', creds.expired)
+
     # If credentials are not available or are invalid, ask the user to log in. 
     if not creds or not creds.valid: 
         if creds and creds.expired and creds.refresh_token: 
@@ -39,30 +43,36 @@ def getEmails():
     # Connect to the Gmail API 
     service = build('gmail', 'v1', credentials=creds) 
   
-    # request a list of all the messages 
-    result = service.users().messages().list(userId='me', q='is:unread').execute() 
+    while True:
+        # request a list of all the messages 
+        q_filter = f'to:{target_mail}'
+        result = service.users().messages().list(userId='me', q=q_filter).execute() 
   
-    # We can also pass maxResults to get any number of emails. Like this: 
-    # result = service.users().messages().list(maxResults=200, userId='me').execute() 
-    messages = result.get('messages') 
+        # We can also pass maxResults to get any number of emails. Like this: 
+        # result = service.users().messages().list(maxResults=200, userId='me').execute() 
+        messages = result.get('messages') 
     
-    if messages is None:
-        print('no unread message')
-        exit()
-  
+        if messages is None:
+            #print('no unread message')
+            #exit()
+            time.sleep(1)
+            continue
+        
+        break
+
     # messages is a list of dictionaries where each dictionary contains a message id. 
   
     # iterate through all the messages 
     for msg in messages: 
         # Get the message from its id 
         txt = service.users().messages().get(userId='me', id=msg['id']).execute() 
-  
+
         # Use try-except to avoid any Errors 
         try: 
             # Get value of 'payload' from dictionary 'txt' 
             payload = txt['payload'] 
             headers = payload['headers'] 
-            
+
             # Look for Subject and Sender Email in the headers 
             for d in headers: 
                 if d['name'] == 'Subject': 
@@ -74,17 +84,17 @@ def getEmails():
                 continue
 
             # The Body of the message is in Encrypted format. So, we have to decode it. 
-            # Get the data and decode it with base 64 decoder. 
-            parts = payload.get('parts')[0] 
-            data = parts['body']['data'] 
+            # Get the data and decode it with base 64 decoder.
+            parts = payload.get('parts')[1] 
+            data = parts['body']['data']
             data = data.replace("-","+").replace("_","/") 
             decoded_data = base64.b64decode(data)
-  
+
             # Now, the data obtained is in lxml. So, we will parse  
             # it with BeautifulSoup library 
             soup = BeautifulSoup(decoded_data , "lxml") 
-            body = soup.body() 
-  
+            body = soup.body()[0] 
+            
             # Printing the subject, sender's email and message 
             print("Subject: ", subject) 
             print("From: ", sender) 
@@ -94,4 +104,4 @@ def getEmails():
             print(e)
   
   
-getEmails()
+getEmails('jujia.good.stuff@gmail.com')
